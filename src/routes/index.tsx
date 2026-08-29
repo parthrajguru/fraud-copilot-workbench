@@ -185,12 +185,12 @@ function buildNarrative(index: number, type: CaseType, customer: string, amount:
 
 function createCases(): FraudCase[] {
   return customerNames.map((customer, index) => {
-    const type = CASE_TYPES[index % CASE_TYPES.length];
-    const [velocityBase, anomalyBase, mismatchBase] = signalProfiles[index % signalProfiles.length];
+    const type = CASE_TYPES[index % CASE_TYPES.length] ?? "Card Fraud";
+    const [velocityBase, anomalyBase, mismatchBase] = signalProfiles[index % signalProfiles.length] ?? [0, 0, 0];
     const velocity = Math.min(100, velocityBase + (type === "Wire Fraud" ? 4 : type === "Identity Theft" ? 2 : 0));
     const anomaly = Math.min(100, anomalyBase + (index % 4 === 0 ? 3 : 0));
     const mismatch = Math.min(100, mismatchBase + (index % 5 === 0 ? 4 : 0));
-    const amount = amountSeeds[index];
+    const amount = amountSeeds[index] ?? 0;
     const baselineAmount = type === "Wire Fraud" ? [8000, 12000, 18000, 9500][index % 4] : type === "Card Fraud" ? [90, 140, 210, 75][index % 4] : [180, 260, 480, 120][index % 4];
     const signal: Signal = {
       velocity,
@@ -200,9 +200,9 @@ function createCases(): FraudCase[] {
       transactionCount: 2 + ((index * 3) % 7),
       windowMinutes: 12 + ((index * 11) % 54),
       baselineAmount,
-      device: devices[index % devices.length],
-      location: locations[index % locations.length],
-      recipient: ["Northstar Imports LLC", "Apex Renovation Group", "M. Alvarez", "Crescent Payroll", "Harborview Capital"][index % 5],
+      device: devices[index % devices.length] ?? "Known browser",
+      location: locations[index % locations.length] ?? "Austin, TX",
+      recipient: ["Northstar Imports LLC", "Apex Renovation Group", "M. Alvarez", "Crescent Payroll", "Harborview Capital"][index % 5] ?? "Established recipient",
     };
     const riskScore = calculateScore(type, signal);
     const risk = getRisk(riskScore);
@@ -277,7 +277,7 @@ function SignalBar({ label, weight, score, explanation }: { label: string; weigh
 }
 
 function FraudTriageCopilot() {
-  const [selectedId, setSelectedId] = useState(mockCases[1]?.id ?? mockCases[0].id);
+  const [selectedId, setSelectedId] = useState(mockCases[1]?.id ?? mockCases[0]?.id ?? "");
   const [statusById, setStatusById] = useState<Record<string, CaseStatus>>(() => Object.fromEntries(mockCases.map((item) => [item.id, item.status])));
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [catchRate, setCatchRate] = useState(70);
@@ -433,7 +433,7 @@ function FraudTriageCopilot() {
                   <div key={type}>
                     <div className="mb-1.5 flex items-center justify-between text-xs"><span className="font-medium">{type}</span><span className="font-mono text-muted-foreground">{total}</span></div>
                     <div className="chart-track">
-                      {counts.map((count, index) => <span key={RISK_LEVELS[index]} className={`chart-segment ${classForRisk(RISK_LEVELS[index])}`} style={{ "--bar-width": `${total ? (count / total) * 100 : 0}%` } as React.CSSProperties} />)}
+                       {counts.map((count, index) => { const risk = RISK_LEVELS[index] ?? "Low"; return <span key={risk} className={`chart-segment ${classForRisk(risk)}`} style={{ "--bar-width": `${total ? (count / total) * 100 : 0}%` } as React.CSSProperties} />; })}
                     </div>
                   </div>
                 );
